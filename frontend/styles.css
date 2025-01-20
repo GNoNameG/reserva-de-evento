@@ -1,0 +1,24 @@
+/* index.html */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+nav {
+  background-color: #eee;
+  padding: 1rem;
+}
+
+nav ul {
+  list-style: none;
+  display: flex;
+  gap: 1rem;
+}
+
+nav li {
+  cursor: pointer;
+}
+
+#app {
+  padding: 1rem;
+}
