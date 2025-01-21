@@ -8,6 +8,7 @@ class Event(models.Model):
     hora = models.TimeField()
     lugar = models.CharField(max_length=200)
     categoria = models.CharField(max_length=100, blank=True, null=True)
+    image_url = models.URLField(blank=True, null=True)
 
     def __str__(self):
         return self.nombre

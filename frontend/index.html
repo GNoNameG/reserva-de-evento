@@ -3,9 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <title>Reserva de Entradas</title>
+
+    <!-- Tus estilos principales -->
     <link rel="stylesheet" href="styles.css" />
+
+    <!-- SweetAlert2 CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css"
+    />
   </head>
   <body>
+    <!-- NAV -->
     <nav>
       <ul>
         <li><a href="#" id="linkLogin">Iniciar Sesión</a></li>
@@ -15,15 +24,31 @@
           <a href="#" id="linkLogout" style="display: none">Cerrar Sesión</a>
         </li>
       </ul>
+      <!-- Muestra el nombre del usuario a la derecha -->
+      <span
+        id="currentUserName"
+        class="user-name"
+        style="float: right; margin-right: 2rem; color: #fff"
+      ></span>
     </nav>
 
+    <!-- ENCABEZADO -->
     <header>
       <h1>Sistema de Reserva de Entradas</h1>
       <p>Selecciona un evento, elige tus asientos y vive la experiencia</p>
     </header>
 
+    <!-- CARRUSEL -->
+    <div id="carousel-container">
+      <div id="carousel-track"></div>
+    </div>
+
+    <!-- Contenedor principal (app) -->
     <main id="app"></main>
 
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Tu script principal -->
     <script src="main.js"></script>
   </body>
 </html>

@@ -5,9 +5,12 @@ const linkLogin = document.getElementById("linkLogin");
 const linkRegister = document.getElementById("linkRegister");
 const linkEventos = document.getElementById("linkEventos");
 const linkLogout = document.getElementById("linkLogout");
+const userNameSpan = document.getElementById("currentUserName");
 
 // Estado de sesión en el front
 let isLoggedIn = false;
+// Guarda el nombre de usuario
+let currentUser = null;
 // Lista de asientos seleccionados para la reserva
 let asientosSeleccionados = [];
 
@@ -52,22 +55,41 @@ function showErrorMessage(msg) {
 function renderRegisterForm() {
   asientosSeleccionados = [];
 
-  app.innerHTML = `
-    <h2>Registro de Usuario</h2>
-    <form id="register-form">
-      <label for="username">Nombre de usuario:</label><br>
-      <input type="text" id="username" required><br><br>
-      
-      <label for="email">Correo electrónico:</label><br>
-      <input type="email" id="email" required><br><br>
-      
-      <label for="password">Contraseña:</label><br>
-      <input type="password" id="password" required><br><br>
-      
-      <button type="submit">Registrarse</button>
-    </form>
-    <div id="register-error" style="color:red;"></div>
+  const html = `
+    <div class="auth-container">
+      <!-- Panel Izquierdo: Formulario -->
+      <div class="auth-left">
+        <div class="auth-form">
+          <h2>Registrarse</h2>
+          <form id="register-form">
+            <div class="form-group">
+              <label for="username">Nombre de usuario</label>
+              <input type="text" id="username" required />
+            </div>
+            <div class="form-group">
+              <label for="email">Correo electrónico</label>
+              <input type="email" id="email" required />
+            </div>
+            <div class="form-group">
+              <label for="password">Contraseña</label>
+              <input type="password" id="password" required />
+            </div>
+            <button type="submit" class="btn-primary">Crear Cuenta</button>
+            <div id="register-error" class="error-text"></div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Panel Derecho: Imagen y Texto Promocional -->
+      <div class="auth-right">
+        <div class="hero-content">
+          <h2>¡Únete a nuestra experiencia!</h2>
+          <p>Regístrate y reserva entradas para los mejores eventos.</p>
+        </div>
+      </div>
+    </div>
   `;
+  app.innerHTML = html;
 
   const registerForm = document.getElementById("register-form");
   registerForm.addEventListener("submit", async (event) => {
@@ -86,7 +108,13 @@ function renderRegisterForm() {
 
       if (response.ok) {
         const data = await response.json();
-        alert("Registro exitoso: " + data.message);
+        Swal.fire({
+          title: "Registro exitoso",
+          text: data.message,
+          icon: "success",
+          confirmButtonText: "Aceptar",
+        });
+
         renderLoginForm(); // Renderiza el login al momento de registrarse
       } else {
         const errorData = await response.json();
@@ -103,19 +131,34 @@ function renderRegisterForm() {
 function renderLoginForm() {
   asientosSeleccionados = [];
 
-  app.innerHTML = `
-    <h2>Iniciar Sesión</h2>
-    <form id="login-form">
-      <label for="email">Correo electrónico:</label><br>
-      <input type="email" id="email" required><br><br>
-      
-      <label for="password">Contraseña:</label><br>
-      <input type="password" id="password" required><br><br>
-      
-      <button type="submit">Iniciar Sesión</button>
-    </form>
-    <div id="login-error" style="color:red;"></div>
+  const html = `
+    <div class="auth-container">
+      <div class="auth-left">
+        <div class="auth-form">
+          <h2>Iniciar Sesión</h2>
+          <form id="login-form">
+            <div class="form-group">
+              <label for="email">Correo electrónico</label>
+              <input type="email" id="email" required />
+            </div>
+            <div class="form-group">
+              <label for="password">Contraseña</label>
+              <input type="password" id="password" required />
+            </div>
+            <button type="submit" class="btn-primary">Ingresar</button>
+            <div id="login-error" class="error-text"></div>
+          </form>
+        </div>
+      </div>
+      <div class="auth-right">
+        <div class="hero-content">
+          <h2>Bienvenido de nuevo</h2>
+          <p>Inicia sesión y reserva tus asientos para los próximos eventos.</p>
+        </div>
+      </div>
+    </div>
   `;
+  app.innerHTML = html;
 
   const loginForm = document.getElementById("login-form");
   loginForm.addEventListener("submit", async (event) => {
@@ -135,12 +178,19 @@ function renderLoginForm() {
       if (response.ok) {
         const data = await response.json();
         isLoggedIn = true;
-        alert("Inicio de sesión exitoso");
+        currentUser = data.username || "";
 
         // Mostrar Logout, ocultar Login y Register
         linkLogout.style.display = "inline";
         linkLogin.style.display = "none";
         linkRegister.style.display = "none";
+        userNameSpan.textContent = currentUser;
+
+        Swal.fire({
+          title: "Inicio de sesión exitoso",
+          icon: "success",
+          confirmButtonText: "Aceptar",
+        });
 
         renderEventosList(); // Ir a la lista de eventos
       } else {
@@ -173,14 +223,16 @@ function renderEventosList() {
       // HTML incluyendo inputs para filtrar por fecha/hora
       let html = `
         <h2>Eventos Disponibles</h2>
-        
-        <div class="filter-box">
-          <label for="filter-date">Filtrar por fecha:</label>
+        <br/>
+        <h3>Filtrar</h3>
+        <br/>
+        <!-- Filtros -->
+        <div class="filter-box">          
+          <br/>
+          <label for="filter-date">Fecha:</label>
           <input type="date" id="filter-date" />
           <button id="btnFilterDate">Filtrar Fecha</button>
-
-          &nbsp; <!-- un pequeño espacio -->
-
+          <br/>
           <label for="filter-hour">Hora:</label>
           <select id="filter-hour" disabled>
             <option value="">-- Selecciona hora --</option>
@@ -188,26 +240,35 @@ function renderEventosList() {
           <button id="btnFilterHour" disabled>Filtrar Hora</button>
         </div>
 
+        <!-- Búsqueda -->
         <div class="search-box">
           <input type="text" id="busqueda" placeholder="Buscar por nombre..." />
           <button id="btnBuscar">Buscar</button>
         </div>
-        
+
+        <!-- Listado de eventos -->
         <div id="eventos-list" class="eventos-grid">
       `;
 
-      // Generamos las tarjetas iniciales (sin filtrar).
       data.forEach((evento) => {
         html += `
           <div class="evento-card">
+            <img src="${
+              evento.image_url || "https://via.placeholder.com/300"
+            }" alt="Imagen Evento" />
             <h3>${evento.nombre}</h3>
-            <p><strong>Fecha:</strong> ${evento.fecha} | <strong>Hora:</strong> ${evento.hora}</p>
+            <p><strong>Fecha:</strong> ${
+              evento.fecha
+            } | <strong>Hora:</strong> ${evento.hora}</p>
             <p><strong>Lugar:</strong> ${evento.lugar}</p>
-            <button onclick="renderReservaAsientos(${evento.id})">Reservar Asientos</button>
+            <button onclick="renderReservaAsientos(${
+              evento.id
+            })">Reservar Asientos</button>
           </div>
         `;
       });
-      html += `</div>`; // Cerrar .eventos-grid
+
+      html += `</div>`;
 
       app.innerHTML = html;
 
@@ -268,7 +329,7 @@ function renderEventosList() {
           return;
         }
 
-        // Filtramos la lista global por la fecha y hora
+        // Se filtra la lista global por la fecha y hora
         const filtradosDateHour = window.allEvents.filter(
           (evt) => evt.fecha === selectedDate && evt.hora === selectedHour
         );
@@ -288,10 +349,17 @@ function renderEventosFiltrados(eventos) {
   eventos.forEach((evento) => {
     newHtml += `
       <div class="evento-card">
+        <img src="${
+          evento.image_url || "https://via.placeholder.com/300"
+        }" alt="Imagen Evento" />
         <h3>${evento.nombre}</h3>
-        <p><strong>Fecha:</strong> ${evento.fecha} | <strong>Hora:</strong> ${evento.hora}</p>
+        <p><strong>Fecha:</strong> ${evento.fecha} | <strong>Hora:</strong> ${
+      evento.hora
+    }</p>
         <p><strong>Lugar:</strong> ${evento.lugar}</p>
-        <button onclick="renderReservaAsientos(${evento.id})">Reservar Asientos</button>
+        <button class="btn-reservar" onclick="renderReservaAsientos(${
+          evento.id
+        })">Reservar Asientos</button>
       </div>
     `;
   });
@@ -313,17 +381,25 @@ function renderReservaAsientos(eventoId) {
     .then((resp) => resp.json())
     .then((data) => {
       let html = `
-        <h2>Reservar Asientos para Evento #${eventoId}</h2>
+      <button class="back-button" onclick="renderEventosList()">Regresar</button>
+        <h2>Reservar Asientos para Evento: ${eventoId}</h2>
         <div class="asientos-container" id="asientos-container">
       `;
 
-      data.asientosDisponibles.forEach((asiento) => {
+      const totalAsientos = 50;
+      let asientosOcupados = data.asientosOcupados || [];
+
+      for (let i = 1; i <= totalAsientos; i++) {
+        const aName = `A${i}`;
+        // Verifica si está ocupado
+        const isOcupado = asientosOcupados.includes(aName);
         html += `
-          <div class="asiento" onclick="seleccionarAsiento('${asiento}')">
-            ${asiento}
+          <div class="asiento ${isOcupado ? "ocupado" : ""}"
+               onclick="seleccionarAsiento('${aName}', ${isOcupado})">
+            ${aName}
           </div>
         `;
-      });
+      }
 
       html += `</div>
         <div>
@@ -346,11 +422,15 @@ function renderReservaAsientos(eventoId) {
 }
 
 // Seleccionar Asiento
-function seleccionarAsiento(asiento) {
+function seleccionarAsiento(asiento, isOcupado) {
+  if (isOcupado) {
+    // No hacemos nada, está ocupado
+    return;
+  }
+  // Toggle en la interfaz
   const asientoDivs = document.querySelectorAll(".asiento");
-  // Toggle visual
   asientoDivs.forEach((div) => {
-    if (div.textContent === asiento) {
+    if (div.textContent === asiento && !div.classList.contains("ocupado")) {
       div.classList.toggle("seleccionado");
     }
   });
@@ -370,7 +450,12 @@ function seleccionarAsiento(asiento) {
 // Confirmar Reserva
 function confirmarReserva(eventoId) {
   if (asientosSeleccionados.length === 0) {
-    alert("No has seleccionado ningún asiento.");
+    Swal.fire({
+      title: "No has seleccionado ningún asiento.",
+      icon: "warning",
+      confirmButtonText: "Aceptar",
+    });
+
     return;
   }
 
@@ -383,14 +468,23 @@ function confirmarReserva(eventoId) {
     .then((response) => response.json())
     .then((data) => {
       if (data.success) {
-        alert(
-          "Reserva confirmada. Revisa tu correo electrónico (si se implementó)."
-        );
+        Swal.fire({
+          title: "Reserva confirmada",
+          text: "Revisa tu correo electrónico para más detalles.",
+          icon: "success",
+          confirmButtonText: "Aceptar",
+        });
+
         // Limpiar
         asientosSeleccionados = [];
         renderEventosList();
       } else {
-        alert("Hubo un problema al reservar: " + data.error);
+        Swal.fire({
+          title: "Hubo un problema al reservar: ",
+          text: data.error,
+          icon: "error",
+          confirmButtonText: "Aceptar",
+        });
       }
     })
     .catch((err) => console.error(err));
@@ -400,14 +494,25 @@ function confirmarReserva(eventoId) {
 function logoutUser() {
   // fetch(`${BASE_URL}/api/logout/`, { method: "POST", credentials: "include" });
 
+  fetch(`${BASE_URL}/api/logout/`, {
+    method: "POST",
+    credentials: "include",
+  }).catch((err) => console.error(err));
+
   isLoggedIn = false;
+  currentUser = null;
   linkLogout.style.display = "none";
   linkLogin.style.display = "inline";
   linkRegister.style.display = "inline";
+  userNameSpan.textContent = "";
 
   asientosSeleccionados = [];
 
-  alert("Sesión cerrada");
+  Swal.fire({
+    title: "Sesión cerrada",
+    icon: "success",
+    confirmButtonText: "Aceptar",
+  });
   renderLoginForm();
 }
 
@@ -415,10 +520,47 @@ function logoutUser() {
 document.addEventListener("DOMContentLoaded", () => {
   // Al inicio, se asume que no se está logeado
   isLoggedIn = false;
+  currentUser = null;
   linkLogout.style.display = "none";
   linkLogin.style.display = "inline";
   linkRegister.style.display = "inline";
+  userNameSpan.textContent = "";
 
   // Renderiza el login por defecto
   renderLoginForm();
+});
+
+let carouselIndex = 0;
+let carouselData = []; // almacenará las imágenes de los eventos
+let carouselInterval;
+
+function renderCarousel() {
+  const track = document.getElementById("carousel-track");
+  if (!track) return; // si no existe el contenedor, salimos
+
+  // Limpiar contenido
+  track.innerHTML = "";
+
+  // Crear slides según los eventos
+  carouselData.forEach((evt, i) => {
+    const slide = document.createElement("div");
+    slide.classList.add("carousel-slide");
+    // Establecemos la imagen como fondo
+    slide.style.backgroundImage = `url(${
+      evt.image_url || "https://via.placeholder.com/1200x300"
+    })`;
+    track.appendChild(slide);
+  });
+
+  // Iniciar el carrusel automático cada 5s
+  clearInterval(carouselInterval);
+  carouselInterval = setInterval(() => {
+    carouselIndex = (carouselIndex + 1) % carouselData.length;
+    track.style.transform = `translateX(-${carouselIndex * 100}%)`;
+  }, 5000);
+}
+
+document.querySelector(".cta-button").addEventListener("click", () => {
+  const eventosSection = document.getElementById("app");
+  eventosSection.scrollIntoView({ behavior: "smooth" });
 });

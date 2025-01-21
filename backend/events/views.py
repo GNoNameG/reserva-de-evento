@@ -67,7 +67,8 @@ def list_events(request):
                 'fecha': evt.fecha.strftime('%Y-%m-%d'),
                 'hora': evt.hora.strftime('%H:%M'),
                 'lugar': evt.lugar,
-                'categoria': evt.categoria or ''
+                'categoria': evt.categoria or '',
+                'image_url': evt.image_url 
             })
         return JsonResponse(data, safe=False)
     return JsonResponse({'error': 'Método no permitido'}, status=405)
@@ -87,7 +88,8 @@ def get_event_seats(request, event_id):
         asientos_disponibles = [a for a in asientos_total if a not in asientos_ocupados]
 
         return JsonResponse({
-            'asientosDisponibles': asientos_disponibles
+            'asientosDisponibles': asientos_disponibles,
+            'asientosOcupados': list(set(asientos_ocupados)) 
         })
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
