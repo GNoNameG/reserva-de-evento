@@ -44,7 +44,10 @@ def login_user(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return JsonResponse({'message': 'Login exitoso'}, status=200)
+            return JsonResponse({
+                'message': 'Login exitoso',
+                'username': user.username
+            }, status=200)
         else:
             return JsonResponse({'error': 'Credenciales inválidas.'}, status=400)
 
@@ -60,7 +63,20 @@ def list_events(request):
     if request.method == 'GET':
         events = Event.objects.all()
         data = []
+
         for evt in events:
+            # Contar cuántos asientos están reservados
+            reservas = Reservation.objects.filter(event=evt)
+            # Ej: "A1,A2" => 2 asientos
+            asientos_ocupados = []
+            for r in reservas:
+                asientos_ocupados.extend(r.seats.split(','))
+
+            # Quitar duplicados si fuera necesario
+            asientos_ocupados = list(set(asientos_ocupados))
+            total_asientos = 50
+            disponibles = total_asientos - len(asientos_ocupados)
+
             data.append({
                 'id': evt.id,
                 'nombre': evt.nombre,
@@ -68,7 +84,8 @@ def list_events(request):
                 'hora': evt.hora.strftime('%H:%M'),
                 'lugar': evt.lugar,
                 'categoria': evt.categoria or '',
-                'image_url': evt.image_url 
+                'image_url': evt.image_url,
+                'disponibles': disponibles
             })
         return JsonResponse(data, safe=False)
     return JsonResponse({'error': 'Método no permitido'}, status=405)

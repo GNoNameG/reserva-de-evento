@@ -179,6 +179,7 @@ function renderLoginForm() {
         const data = await response.json();
         isLoggedIn = true;
         currentUser = data.username || "";
+        userNameSpan.textContent = currentUser;
 
         // Mostrar Logout, ocultar Login y Register
         linkLogout.style.display = "inline";
@@ -220,6 +221,9 @@ function renderEventosList() {
       // Se guarda la lista completa en una variable global
       window.allEvents = data;
 
+      carouselData = data;
+      renderCarousel();
+
       // HTML incluyendo inputs para filtrar por fecha/hora
       let html = `
         <h2>Eventos Disponibles</h2>
@@ -251,21 +255,26 @@ function renderEventosList() {
       `;
 
       data.forEach((evento) => {
+        const isSoldOut = evento.disponibles === 0;
+
         html += `
-          <div class="evento-card">
-            <img src="${
-              evento.image_url || "https://via.placeholder.com/300"
-            }" alt="Imagen Evento" />
-            <h3>${evento.nombre}</h3>
-            <p><strong>Fecha:</strong> ${
-              evento.fecha
-            } | <strong>Hora:</strong> ${evento.hora}</p>
-            <p><strong>Lugar:</strong> ${evento.lugar}</p>
-            <button onclick="renderReservaAsientos(${
-              evento.id
-            })">Reservar Asientos</button>
-          </div>
-        `;
+    <div class="evento-card">
+      <img src="${
+        evento.image_url || "https://via.placeholder.com/300"
+      }" alt="Imagen Evento" />
+      <h3>${evento.nombre}</h3>
+      <p><strong>Fecha:</strong> ${evento.fecha} | <strong>Hora:</strong> ${
+          evento.hora
+        }</p>
+      <p><strong>Lugar:</strong> ${evento.lugar}</p>
+      <p><strong>Disponibles:</strong> ${evento.disponibles}</p>
+      ${
+        isSoldOut
+          ? `<button class="btn-soldout" disabled>SOLD OUT</button>`
+          : `<button onclick="renderReservaAsientos(${evento.id})">Reservar Asientos</button>`
+      }
+    </div>
+  `;
       });
 
       html += `</div>`;
@@ -402,11 +411,11 @@ function renderReservaAsientos(eventoId) {
       }
 
       html += `</div>
-        <div>
-          <h3>Asientos Seleccionados:</h3>
-          <p id="asientos-seleccionados"></p>
-          <button id="btnConfirmar">Confirmar Reserva</button>
-        </div>
+        <div class="reserva-acciones">
+    <h3>Asientos Seleccionados:</h3>
+    <p id="asientos-seleccionados"></p>
+    <button id="btnConfirmar" class="btn-confirm">Confirmar Reserva</button>
+  </div>
       `;
 
       app.innerHTML = html;
@@ -526,6 +535,15 @@ document.addEventListener("DOMContentLoaded", () => {
   linkRegister.style.display = "inline";
   userNameSpan.textContent = "";
 
+  // Cargar datos del carrusel tan pronto abra la página
+  fetch(`${BASE_URL}/api/eventos/`)
+    .then((res) => res.json())
+    .then((data) => {
+      carouselData = data;
+      renderCarousel();
+    })
+    .catch((err) => console.error("Error cargando eventos para carrusel", err));
+
   // Renderiza el login por defecto
   renderLoginForm();
 });
@@ -559,8 +577,3 @@ function renderCarousel() {
     track.style.transform = `translateX(-${carouselIndex * 100}%)`;
   }, 5000);
 }
-
-document.querySelector(".cta-button").addEventListener("click", () => {
-  const eventosSection = document.getElementById("app");
-  eventosSection.scrollIntoView({ behavior: "smooth" });
-});
