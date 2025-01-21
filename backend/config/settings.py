@@ -26,7 +26,6 @@ SECRET_KEY = 'django-insecure-9vx)*^0azp(2@ftaka3e5&9y7s9z^u8u03pj4d#&uc3q%)9_xf
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    'localhost',
     '127.0.0.1',
     'reserva-de-evento-c6fe1f12857b.herokuapp.com',
 ]
