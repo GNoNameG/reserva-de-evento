@@ -27,7 +27,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     '127.0.0.1',
-    'reserva-de-evento-c6fe1f12857b.herokuapp.com',
+    'web-production-f364.up.railway.app',
 ]
 
 
