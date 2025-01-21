@@ -1,35 +1,57 @@
+const BASE_URL = "http://127.0.0.1:8000";
+
 const app = document.getElementById("app");
 const linkLogin = document.getElementById("linkLogin");
 const linkRegister = document.getElementById("linkRegister");
 const linkEventos = document.getElementById("linkEventos");
 const linkLogout = document.getElementById("linkLogout");
 
-// Almacena el token del login
+// Estado de sesión en el front
 let isLoggedIn = false;
+// Lista de asientos seleccionados para la reserva
+let asientosSeleccionados = [];
 
-// Los Listeners de los enlaces
+// Listeners de navbar
 linkLogin.addEventListener("click", (e) => {
   e.preventDefault();
   renderLoginForm();
 });
-
 linkRegister.addEventListener("click", (e) => {
   e.preventDefault();
   renderRegisterForm();
 });
-
 linkEventos.addEventListener("click", (e) => {
   e.preventDefault();
   renderEventosList();
 });
-
 linkLogout.addEventListener("click", (e) => {
   e.preventDefault();
   logoutUser();
 });
 
-// Renderiza el formulario de register
+// Función: Mostrar Mensajes de:
+// Éxito
+function showSuccessMessage(msg) {
+  const div = document.createElement("div");
+  div.className = "success-message";
+  div.textContent = msg;
+  app.prepend(div);
+  setTimeout(() => div.remove(), 3000);
+}
+
+// Error
+function showErrorMessage(msg) {
+  const div = document.createElement("div");
+  div.className = "error-message";
+  div.textContent = msg;
+  app.prepend(div);
+  setTimeout(() => div.remove(), 3000);
+}
+
+// Formulario de Registro
 function renderRegisterForm() {
+  asientosSeleccionados = [];
+
   app.innerHTML = `
     <h2>Registro de Usuario</h2>
     <form id="register-form">
@@ -54,21 +76,19 @@ function renderRegisterForm() {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
-    // Acá es donde se llama a la API de Django
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/register/", {
+      const response = await fetch(`${BASE_URL}/api/register/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ username, email, password }),
       });
 
       if (response.ok) {
-        // Registro exitoso
         const data = await response.json();
         alert("Registro exitoso: " + data.message);
-        renderLoginForm(); // redirigir al login
+        renderLoginForm(); // Renderiza el login al momento de registrarse
       } else {
-        // Error en el register
         const errorData = await response.json();
         document.getElementById("register-error").textContent =
           errorData.error || "Error al registrarse.";
@@ -79,11 +99,13 @@ function renderRegisterForm() {
   });
 }
 
-// Renderiza el formulario de login
+// Formulario de Login
 function renderLoginForm() {
+  asientosSeleccionados = [];
+
   app.innerHTML = `
-        <h2>Iniciar Sesión</h2>
-        <form id="login-form">
+    <h2>Iniciar Sesión</h2>
+    <form id="login-form">
       <label for="email">Correo electrónico:</label><br>
       <input type="email" id="email" required><br><br>
       
@@ -101,21 +123,26 @@ function renderLoginForm() {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
-    // Se llama a la API de Django para el login
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/login/", {
+      const response = await fetch(`${BASE_URL}/api/login/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        // Para que se incluyan cookies y Django reconozca la sesión
+        credentials: "include",
         body: JSON.stringify({ email, password }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        // Acá se almacena el token
         isLoggedIn = true;
-        linkLogout.style.display = "inline";
         alert("Inicio de sesión exitoso");
-        renderEventosList();
+
+        // Mostrar Logout, ocultar Login y Register
+        linkLogout.style.display = "inline";
+        linkLogin.style.display = "none";
+        linkRegister.style.display = "none";
+
+        renderEventosList(); // Ir a la lista de eventos
       } else {
         const errorData = await response.json();
         document.getElementById("login-error").textContent =
@@ -127,134 +154,163 @@ function renderLoginForm() {
   });
 }
 
-// Renderiza la lista de eventos
+// Lista de eventos
 function renderEventosList() {
-  // Acá se verifica si el usuario está loggeado
+  // Al entrar a la pantalla de eventos, limpiamos asientos
+  asientosSeleccionados = [];
+
   if (!isLoggedIn) {
-    alert("Debe iniciar sesión para ver los eventos");
+    showErrorMessage("Debes iniciar sesión para ver los eventos");
     return renderLoginForm();
   }
-  // Petición a la API para obtener la lista de eventos
-  fetch("http://127.0.0.1:8000/api/eventos/")
-    .then((response) => response.json())
+
+  fetch(`${BASE_URL}/api/eventos/`, {
+    credentials: "include", // Enviamos cookies
+  })
+    .then((resp) => resp.json())
     .then((data) => {
-      let html = "<h2>Eventos Disponibles</h2>";
-      html +=
-        '<input type="text" id="busqueda" placeholder="Buscar por nombre...">';
-      html += '<button id="btnBuscar">Buscar</button>';
-      html += '<div id="eventos-list">';
+      let html = `
+        <h2>Eventos Disponibles</h2>
+        <div class="search-box">
+          <input type="text" id="busqueda" placeholder="Buscar por nombre..." />
+          <button id="btnBuscar">Buscar</button>
+        </div>
+        <div id="eventos-list" class="eventos-grid">
+      `;
 
       data.forEach((evento) => {
         html += `
-          <div>
+          <div class="evento-card">
             <h3>${evento.nombre}</h3>
-            <p>Fecha: ${evento.fecha} | Hora: ${evento.hora} | Lugar: ${evento.lugar}</p>
+            <p><strong>Fecha:</strong> ${evento.fecha} | <strong>Hora:</strong> ${evento.hora}</p>
+            <p><strong>Lugar:</strong> ${evento.lugar}</p>
             <button onclick="renderReservaAsientos(${evento.id})">Reservar Asientos</button>
           </div>
-          <hr>
         `;
       });
-      html += "</div>";
 
+      html += `</div>`;
       app.innerHTML = html;
 
-      // Acá es donde empieza la acción de apartar
+      // Manejo de la búsqueda
       const btnBuscar = document.getElementById("btnBuscar");
       btnBuscar.addEventListener("click", () => {
         const texto = document.getElementById("busqueda").value.toLowerCase();
-        // Podríamos filtrar la lista en el frontend o hacer otra petición
-        // Por simplicidad, hagamos un simple filtrado en el frontend:
+        // Filtrado en cliente
         const eventosFiltrados = data.filter((evt) =>
           evt.nombre.toLowerCase().includes(texto)
         );
-        // Se actualiza la lista
-        const eventosListDiv = document.getElementById("eventos-list");
-        let newHtml = "";
-        eventosFiltrados.forEach((evento) => {
-          newHtml += `
-            <div>
-              <h3>${evento.nombre}</h3>
-              <p>Fecha: ${evento.fecha} | Hora: ${evento.hora} | Lugar: ${evento.lugar}</p>
-              <button onclick="renderReservaAsientos(${evento.id})">Reservar Asientos</button>
-            </div>
-            <hr>
-          `;
-        });
-        eventosListDiv.innerHTML = newHtml;
+        renderEventosFiltrados(eventosFiltrados);
       });
     })
-    .catch((err) => console.error(err));
+    .catch((err) => {
+      console.error(err);
+      showErrorMessage("Error al cargar los eventos");
+    });
 }
 
-// Función para renderizar la selección de asientos
+function renderEventosFiltrados(eventos) {
+  const eventosListDiv = document.getElementById("eventos-list");
+  let newHtml = "";
+
+  eventos.forEach((evento) => {
+    newHtml += `
+      <div class="evento-card">
+        <h3>${evento.nombre}</h3>
+        <p><strong>Fecha:</strong> ${evento.fecha} | <strong>Hora:</strong> ${evento.hora}</p>
+        <p><strong>Lugar:</strong> ${evento.lugar}</p>
+        <button onclick="renderReservaAsientos(${evento.id})">Reservar Asientos</button>
+      </div>
+    `;
+  });
+
+  eventosListDiv.innerHTML = newHtml;
+}
+
+// Renderizar asientos
 function renderReservaAsientos(eventoId) {
-  // Petición a la API para obtener información de asientos disponibles
-  fetch(`http://127.0.0.1:8000/api/eventos/${eventoId}/asientos/`)
-    .then((response) => response.json())
+  asientosSeleccionados = [];
+
+  fetch(`${BASE_URL}/api/eventos/${eventoId}/asientos/`, {
+    credentials: "include",
+  })
+    .then((resp) => resp.json())
     .then((data) => {
-      let html = `<h2>Reservar Asientos para Evento #${eventoId}</h2>`;
-      html += `<div id="asientos-container" style="display: flex; flex-wrap: wrap; width: 200px;">`;
+      let html = `
+        <h2>Reservar Asientos para Evento #${eventoId}</h2>
+        <div class="asientos-container" id="asientos-container">
+      `;
 
       data.asientosDisponibles.forEach((asiento) => {
         html += `
-          <div
-            style="border: 1px solid #000; width: 40px; height: 40px; margin: 5px; text-align: center; line-height: 40px; cursor: pointer;"
-            onclick="seleccionarAsiento('${asiento}')"
-          >
+          <div class="asiento" onclick="seleccionarAsiento('${asiento}')">
             ${asiento}
           </div>
         `;
       });
-      html += `</div>`;
 
-      html += `
+      html += `</div>
         <div>
           <h3>Asientos Seleccionados:</h3>
           <p id="asientos-seleccionados"></p>
-          <button onclick="confirmarReserva(${eventoId})">Confirmar Reserva</button>
+          <button id="btnConfirmar">Confirmar Reserva</button>
         </div>
       `;
 
       app.innerHTML = html;
+
+      // Botón para confirmar
+      const btnConfirmar = document.getElementById("btnConfirmar");
+      btnConfirmar.addEventListener("click", () => confirmarReserva(eventoId));
     })
-    .catch((err) => console.error(err));
+    .catch((err) => {
+      console.error(err);
+      showErrorMessage("Error al cargar asientos.");
+    });
 }
 
-// Se almacenan los asientos seleccionados
-let asientosSeleccionados = [];
-
-// Función para seleccionar un asiento
+// Seleccionar Asiento
 function seleccionarAsiento(asiento) {
+  const asientoDivs = document.querySelectorAll(".asiento");
+  // Toggle visual
+  asientoDivs.forEach((div) => {
+    if (div.textContent === asiento) {
+      div.classList.toggle("seleccionado");
+    }
+  });
+
+  // Añadir o remover del array
   if (!asientosSeleccionados.includes(asiento)) {
     asientosSeleccionados.push(asiento);
   } else {
-    // Si ya está seleccionado, se quita
     asientosSeleccionados = asientosSeleccionados.filter((a) => a !== asiento);
   }
 
+  // Mostrar lista
   document.getElementById("asientos-seleccionados").textContent =
     asientosSeleccionados.join(", ");
 }
 
-// Función para confirmar la reserva
+// Confirmar Reserva
 function confirmarReserva(eventoId) {
   if (asientosSeleccionados.length === 0) {
     alert("No has seleccionado ningún asiento.");
     return;
   }
 
-  fetch(`http://127.0.0.1:8000/api/reservar/`, {
+  fetch(`${BASE_URL}/api/reservar/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify({ eventoId, asientos: asientosSeleccionados }),
   })
     .then((response) => response.json())
     .then((data) => {
       if (data.success) {
         alert(
-          "Reserva confirmada. Revisa tu correo electrónico (si implementamos el envío de email)."
+          "Reserva confirmada. Revisa tu correo electrónico (si se implementó)."
         );
-        // Limpiar seleccion
+        // Limpiar
         asientosSeleccionados = [];
         renderEventosList();
       } else {
@@ -264,15 +320,29 @@ function confirmarReserva(eventoId) {
     .catch((err) => console.error(err));
 }
 
-// Función para cerrar sesión
+// Cerrar Sesión
 function logoutUser() {
+  // fetch(`${BASE_URL}/api/logout/`, { method: "POST", credentials: "include" });
+
   isLoggedIn = false;
   linkLogout.style.display = "none";
+  linkLogin.style.display = "inline";
+  linkRegister.style.display = "inline";
+
+  asientosSeleccionados = [];
+
   alert("Sesión cerrada");
   renderLoginForm();
 }
 
-// Al cargar la página por primera vez, se mostrará el formulario de login
+// Al cargar la página
 document.addEventListener("DOMContentLoaded", () => {
+  // Al inicio, se asume que no se está logeado
+  isLoggedIn = false;
+  linkLogout.style.display = "none";
+  linkLogin.style.display = "inline";
+  linkRegister.style.display = "inline";
+
+  // Renderiza el login por defecto
   renderLoginForm();
 });
