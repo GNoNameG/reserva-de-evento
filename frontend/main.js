@@ -164,20 +164,39 @@ function renderEventosList() {
     return renderLoginForm();
   }
 
-  fetch(`${BASE_URL}/api/eventos/`, {
-    credentials: "include", // Enviamos cookies
-  })
+  fetch(`${BASE_URL}/api/eventos/`, { credentials: "include" })
     .then((resp) => resp.json())
     .then((data) => {
+      // Se guarda la lista completa en una variable global
+      window.allEvents = data;
+
+      // HTML incluyendo inputs para filtrar por fecha/hora
       let html = `
         <h2>Eventos Disponibles</h2>
+        
+        <div class="filter-box">
+          <label for="filter-date">Filtrar por fecha:</label>
+          <input type="date" id="filter-date" />
+          <button id="btnFilterDate">Filtrar Fecha</button>
+
+          &nbsp; <!-- un pequeño espacio -->
+
+          <label for="filter-hour">Hora:</label>
+          <select id="filter-hour" disabled>
+            <option value="">-- Selecciona hora --</option>
+          </select>
+          <button id="btnFilterHour" disabled>Filtrar Hora</button>
+        </div>
+
         <div class="search-box">
           <input type="text" id="busqueda" placeholder="Buscar por nombre..." />
           <button id="btnBuscar">Buscar</button>
         </div>
+        
         <div id="eventos-list" class="eventos-grid">
       `;
 
+      // Generamos las tarjetas iniciales (sin filtrar).
       data.forEach((evento) => {
         html += `
           <div class="evento-card">
@@ -188,19 +207,72 @@ function renderEventosList() {
           </div>
         `;
       });
+      html += `</div>`; // Cerrar .eventos-grid
 
-      html += `</div>`;
       app.innerHTML = html;
 
-      // Manejo de la búsqueda
+      // Referencias a los controles de filtro
       const btnBuscar = document.getElementById("btnBuscar");
+      const inputBusqueda = document.getElementById("busqueda");
+      const btnFilterDate = document.getElementById("btnFilterDate");
+      const filterDate = document.getElementById("filter-date");
+      const filterHourSelect = document.getElementById("filter-hour");
+      const btnFilterHour = document.getElementById("btnFilterHour");
+
+      // 1) FILTRAR POR NOMBRE (texto)
       btnBuscar.addEventListener("click", () => {
-        const texto = document.getElementById("busqueda").value.toLowerCase();
-        // Filtrado en cliente
-        const eventosFiltrados = data.filter((evt) =>
+        const texto = inputBusqueda.value.toLowerCase();
+        // Filtrado en cliente: coincidencia en nombre
+        const eventosFiltrados = window.allEvents.filter((evt) =>
           evt.nombre.toLowerCase().includes(texto)
         );
         renderEventosFiltrados(eventosFiltrados);
+      });
+
+      // 2) FILTRAR POR FECHA
+      btnFilterDate.addEventListener("click", () => {
+        const selectedDate = filterDate.value; // YYYY-MM-DD
+        if (!selectedDate) {
+          showErrorMessage("Por favor, selecciona una fecha.");
+          return;
+        }
+        // Filtrar
+        const filtradosPorFecha = window.allEvents.filter(
+          (evt) => evt.fecha === selectedDate
+        );
+        // Render
+        renderEventosFiltrados(filtradosPorFecha);
+
+        // Generar lista única de horas para esa fecha
+        const horasUnicas = [...new Set(filtradosPorFecha.map((e) => e.hora))];
+        // Rellenar el select de horas
+        filterHourSelect.innerHTML = `<option value="">-- Selecciona hora --</option>`;
+        horasUnicas.forEach((hr) => {
+          filterHourSelect.innerHTML += `<option value="${hr}">${hr}</option>`;
+        });
+        // Habilitar el select y el botón
+        filterHourSelect.disabled = false;
+        btnFilterHour.disabled = false;
+      });
+
+      // 3) FILTRAR POR HORA (sobre la fecha ya filtrada)
+      btnFilterHour.addEventListener("click", () => {
+        const selectedDate = filterDate.value;
+        const selectedHour = filterHourSelect.value;
+        if (!selectedDate) {
+          showErrorMessage("Primero debes seleccionar una fecha.");
+          return;
+        }
+        if (!selectedHour) {
+          showErrorMessage("Por favor, selecciona una hora.");
+          return;
+        }
+
+        // Filtramos la lista global por la fecha y hora
+        const filtradosDateHour = window.allEvents.filter(
+          (evt) => evt.fecha === selectedDate && evt.hora === selectedHour
+        );
+        renderEventosFiltrados(filtradosDateHour);
       });
     })
     .catch((err) => {
@@ -223,6 +295,10 @@ function renderEventosFiltrados(eventos) {
       </div>
     `;
   });
+
+  if (eventos.length === 0) {
+    newHtml = "<p>No hay eventos que coincidan con el filtro.</p>";
+  }
 
   eventosListDiv.innerHTML = newHtml;
 }
