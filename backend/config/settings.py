@@ -27,7 +27,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     '127.0.0.1',
-    'web-production-f364.up.railway.app',
+    'reserva-de-evento-c6fe1f12857b.herokuapp.com',
 ]
 
 
@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'corsheaders',
-    'backend.events.apps.EventsConfig',
+    'events',
 ]
 
 MIDDLEWARE = [
