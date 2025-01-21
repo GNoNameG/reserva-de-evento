@@ -28,7 +28,7 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    'tuapp.herokuapp.com',
+    'https://reserva-de-evento-c6fe1f12857b.herokuapp.com',
 ]
 
 
